@@ -13,9 +13,9 @@ def main():
     parser.add_argument('var')
     parser.add_argument('--flip', action='store_true', default=False)
     parser.add_argument('--time', default=0)
-    parser.add_argument('--vmin', default=240)
-    parser.add_argument('--vmax', default=320)
-    parser.add_argument('--cmap', default='coolwarm')
+    parser.add_argument('--vmin')
+    parser.add_argument('--vmax')
+    parser.add_argument('--cmap', default='viridis')
 
     args = parser.parse_args()
     path = Path(args.file).expanduser()
@@ -28,8 +28,17 @@ def main():
         if args.flip:
             z = np.flip(z, 0)
 
-        plt.imshow(z, extent=[x[0], x[-1], y[0], y[-1]], aspect='auto',
-                   vmin=args.vmin, vmax=args.vmax, cmap=args.cmap)
+        kwargs = {
+            'extent': [x[0], x[-1], y[0], y[-1]],
+            'aspect': 'auto',
+            'cmap': args.cmap
+        }
+        if args.vmin:
+            kwargs['vmin'] = args.vmin
+        if args.vmax:
+            kwargs['vmax'] = args.vmax
+
+        plt.imshow(z, **kwargs)
         plt.title(args.var)
         plt.colorbar()
         plt.tight_layout()
