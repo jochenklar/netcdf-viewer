@@ -23,8 +23,9 @@ classifiers = [
 ]
 dependencies = [
     "dash",
-    "xarray",
-    "pandas"
+    "dash-bootstrap-components",
+    "pandas",
+    "xarray"
 ]
 dynamic = ["version"]
 
