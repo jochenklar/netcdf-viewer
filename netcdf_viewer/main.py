@@ -20,41 +20,38 @@ def main():
         ds = xr.open_dataset(path, decode_times=False)
 
     data_vars = list(ds.data_vars)
+    data_var = data_vars[0]
+
+    zmin = ds[data_var].min().values
+    zmax = ds[data_var].max().values
 
     app = dash.Dash(external_stylesheets=[dbc.themes.BOOTSTRAP])
 
+    controls = [
+        dash.html.Div([
+            dash.html.Label('Var', htmlFor='var', style={'font-weight': 'bold'}),
+            dbc.Select(id='var', value=data_vars[0], options=[
+                {'label': data_var, 'value': data_var} for data_var in data_vars
+            ])
+        ], style={'width': '20vw'}),
+        dash.html.Div([
+            dash.html.Label('Time', htmlFor='number', style={'font-weight': 'bold'}),
+            dbc.Input(id='time', type='number', value=0, min=0, max=ds.sizes.get('time', 0))
+        ], className='me-auto', style={'width': '10vw'}),
+        dash.html.Div([
+            dash.html.Label('z min', htmlFor='number', style={'font-weight': 'bold'}),
+            dbc.Input(id='zmin', type='number', value=zmin)
+        ], style={'width': '10vw'}),
+        dash.html.Div([
+            dash.html.Label('z max', htmlFor='number', style={'font-weight': 'bold'}),
+            dbc.Input(id='zmax', type='number', value=zmax)
+        ], style={'width': '10vw'})
+    ]
+
     app.layout = dash.html.Div([
-        dash.html.Div([
-            dash.html.Div([
-                dash.html.Label('Var', htmlFor='var', style={'font-weight': 'bold'}),
-                dbc.Select(id='var', value=data_vars[0], options=[
-                    {'label': data_var, 'value': data_var} for data_var in data_vars
-                ])
-            ], style={'width': '20vw'}),
-            dash.html.Div([
-                dash.html.Label('Time', htmlFor='number', style={'font-weight': 'bold'}),
-                dbc.Input(id='time', type='number', value=0, min=0, max=ds.sizes['time'])
-            ], className='me-auto', style={'width': '10vw'}),
-            dash.html.Div([
-                dash.html.Label('z min', htmlFor='number', style={'font-weight': 'bold'}),
-                dbc.Input(id='zmin', type='number', value=0)
-            ], style={'width': '10vw'}),
-            dash.html.Div([
-                dash.html.Label('z max', htmlFor='number', style={'font-weight': 'bold'}),
-                dbc.Input(id='zmax', type='number', value=20)
-            ], style={'width': '10vw'})
-        ], style={'display': 'flex', 'flexDirection': 'row', 'gap': '20px'}),
-        dash.html.Div([
-            dash.dcc.Graph(id='graph', style={
-                'height': '80vh',
-                'margin-top': '20px',
-                'border': '1px solid silver',
-                'border-radius': '20px',
-                'padding': '8px',
-                'background-color': 'white'
-            }),
-        ]),
-    ], style={'padding': '20px'})
+        dash.html.Div(controls, className="d-flex flex-row gap-3 shadow p-3 mb-3 rounded"),
+        dash.dcc.Graph(id='graph', className="flex-grow-1 shadow p-3 rounded")
+    ], className='position-absolute top-0 end-0 bottom-0 start-0 d-flex flex-column gap-3 p-3')
 
     @dash.callback(
         dash.Output('graph', 'figure'),
@@ -66,9 +63,12 @@ def main():
         )
     )
     def update_graph(var_name, time_index, zmin, zmax):
+        data = ds[var_name or data_vars[0]]
+        if 'time' in ds.dims:
+            data = data.isel(time=time_index or 0)
 
-        data = ds[var_name or data_vars[0]].isel(time=time_index or 0)
         fig = px.imshow(data, origin='lower', aspect='equal', zmin=zmin, zmax=zmax)
+        fig.update_coloraxes(colorbar_title_side='right')
         fig['layout']['uirevision'] = True
         return fig
 
